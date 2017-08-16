@@ -63,7 +63,7 @@ func main() {
 
 | Name       | Type    | Description |
 | ---------- | ------- | ----------- |
-| params     | String  | URL encoded query params |
+| params     | Table   | URL encoded query params |
 | cookies    | Table   | Additional cookies to send with the request |
 | headers    | Table   | Additional headers to send with the request |
 | proxy      | String  | Proxy |
@@ -88,7 +88,7 @@ func main() {
 
 | Name       | Type    | Description |
 | ---------- | ------- | ----------- |
-| params     | String  | URL encoded query params |
+| params     | Table   | URL encoded query params |
 | cookies    | Table   | Additional cookies to send with the request |
 | headers    | Table   | Additional headers to send with the request |
 | proxy      | String  | Proxy |
@@ -111,11 +111,11 @@ func main() {
 
 **Options**
 
-| Name    | Type   | Description |
-| ------- | ------ | ----------- |
-| params   | Table | URL encoded query params |
-| cookies | Table  | Additional cookies to send with the request |
-| headers | Table  | Additional headers to send with the request |
+| Name       | Type    | Description |
+| ---------- | ------- | ----------- |
+| params     | Table   | URL encoded query params |
+| cookies    | Table   | Additional cookies to send with the request |
+| headers    | Table   | Additional headers to send with the request |
 | proxy      | String  | Proxy |
 | timeout    | Float64 | Dial timeout |
 | verifycert | Bool    | Whether verify server cert |
@@ -223,11 +223,11 @@ func main() {
 
 **Options**
 
-| Name    | Type   | Description |
-| ------- | ------ | ----------- |
-| params   | Table | URL encoded query params |
-| cookies | Table  | Additional cookies to send with the request |
-| headers | Table  | Additional headers to send with the request |
+| Name       | Type    | Description |
+| ---------- | ------- | ----------- |
+| params     | Table   | URL encoded query params |
+| cookies    | Table   | Additional cookies to send with the request |
+| headers    | Table   | Additional headers to send with the request |
 | proxy      | String  | Proxy |
 | timeout    | Float64 | Dial timeout |
 | verifycert | Bool    | Whether verify server cert |
