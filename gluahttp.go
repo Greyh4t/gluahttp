@@ -207,6 +207,9 @@ func (h *httpModule) doRequest(L *lua.LState, method string, uri string, options
 			})
 			req.URL.RawQuery = parsedQuery.Encode()
 		}
+		if reqHost, ok := options.RawGet(lua.LString("host")).(lua.LString); ok {
+			req.Host = reqHost.String()
+		}
 	}
 	res, err := h.client.Do(req)
 	if err != nil {

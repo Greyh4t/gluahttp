@@ -60,7 +60,7 @@ func httpResponseIndex(L *lua.LState) int {
 		return httpResponseBodySize(res, L)
 	case "raw_request":
 		return httpRawRequest(res, L)
-	case "schema":
+	case "request_schema":
 		return httpRequestSchema(res, L)
 	}
 	return 0

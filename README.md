@@ -13,20 +13,8 @@ go get github.com/cjoudrey/gluahttp
 ## Usage
 
 ```go
-package main
-
-import "github.com/yuin/gopher-lua"
-import "github.com/Greyh4t/gluahttp"
-
-func main() {
-	L := lua.NewState()
-	defer L.Close()
-
-	L.PreloadModule("http", gluahttp.NewHttpModule().Loader)
-
-	if err := L.DoString(`
 local http = require("http")
-response, error_message = http.post("http://www.jd.com?x=1", {
+response, error_message = http.post("http://www.example.com?x=1", {
 	params={
 		page="测试",
 		x="2"
@@ -43,12 +31,13 @@ response, error_message = http.post("http://www.jd.com?x=1", {
 	headers={
 		Accept="*/*",
 		Test="xxx",
-		["User-Agent"]="testUserAgent"
+		["User-Agent"]="testUserAgent",
 	},
 	cookies={
 		session="xxx",
 		user="test"
 	},
+	--host="www.test.com",
 	--proxy="http://127.0.0.1:8080",
 	timeout=3,
 	redirect=false,
@@ -58,16 +47,13 @@ if error_message
 then
 	print(error_message)
 else
-	print(response.schema)
+	print(response.status_code)
+	print(response.request_schema)
 	print(response.raw_request)
 --	print(response.body)
 	print(response.headers["Content-Type"])
 	print(response.headers["Location"])
 end
-    `); err != nil {
-		panic(err)
-	}
-}
 ```
 
 ## API
@@ -94,13 +80,14 @@ end
 
 | Name       | Type    | Description |
 | ---------- | ------- | ----------- |
-| params     | Table   | URL encoded query params |
+| params     | Table   | URL encoded query params |
 | cookies    | Table   | Additional cookies to send with the request |
 | headers    | Table   | Additional headers to send with the request |
 | proxy      | String  | Proxy |
 | timeout    | Float64 | Dial timeout |
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
+| host       | String  | Set a host different with url |
 
 **Returns**
 
@@ -119,13 +106,14 @@ end
 
 | Name       | Type    | Description |
 | ---------- | ------- | ----------- |
-| params     | Table   | URL encoded query params |
+| params     | Table   | URL encoded query params |
 | cookies    | Table   | Additional cookies to send with the request |
 | headers    | Table   | Additional headers to send with the request |
 | proxy      | String  | Proxy |
 | timeout    | Float64 | Dial timeout |
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
+| host       | String  | Set a host different with url |
 
 **Returns**
 
@@ -150,6 +138,7 @@ end
 | proxy      | String  | Proxy |
 | timeout    | Float64 | Dial timeout |
 | verifycert | Bool    | Whether verify server cert |
+| host       | String  | Set a host different with url |
 
 **Returns**
 
@@ -179,6 +168,7 @@ end
 | timeout    | Float64 | Dial timeout |
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
+| host       | String  | Set a host different with url |
 
 
 **Returns**
@@ -209,6 +199,7 @@ end
 | timeout    | Float64 | Dial timeout |
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
+| host       | String  | Set a host different with url |
 
 **Returns**
 
@@ -238,6 +229,7 @@ end
 | timeout    | Float64 | Dial timeout |
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
+| host       | String  | Set a host different with url |
 
 **Returns**
 
@@ -262,6 +254,7 @@ end
 | proxy      | String  | Proxy |
 | timeout    | Float64 | Dial timeout |
 | verifycert | Bool    | Whether verify server cert |
+| host       | String  | Set a host different with url |
 
 **Returns**
 
