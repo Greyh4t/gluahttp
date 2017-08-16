@@ -13,16 +13,18 @@ go get github.com/cjoudrey/gluahttp
 ## Usage
 
 ```go
-import "github.com/Greyh4t/gopher-lua"
-import "github.com/cjoudrey/gluahttp"
+package main
+
+import "github.com/yuin/gopher-lua"
+import "github.com/Greyh4t/gluahttp"
 
 func main() {
-    L := lua.NewState()
-    defer L.Close()
+	L := lua.NewState()
+	defer L.Close()
 
-    L.PreloadModule("http", NewHttpModule(&http.Client{}).Loader)
+	L.PreloadModule("http", gluahttp.NewHttpModule().Loader)
 
-    if err := L.DoString(`
+	if err := L.DoString(`
 local http = require("http")
 response, error_message = http.post("http://www.jd.com?x=1", {
 	params={
@@ -33,9 +35,9 @@ response, error_message = http.post("http://www.jd.com?x=1", {
 		a=1,
 		b="2"
 	},
-	files={
-		file="/x.txt"
-	},
+	--files={
+	--	file="/x.txt"
+	--},
 	--json='{"a":"测试"}',
 	--rawdata="aaa'gdgd",
 	headers={
@@ -63,8 +65,8 @@ else
 	print(response.headers["Location"])
 end
     `); err != nil {
-        panic(err)
-    }
+		panic(err)
+	}
 }
 ```
 
