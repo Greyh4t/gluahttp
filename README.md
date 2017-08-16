@@ -13,7 +13,7 @@ go get github.com/cjoudrey/gluahttp
 ## Usage
 
 ```go
-import "github.com/yuin/gopher-lua"
+import "github.com/Greyh4t/gopher-lua"
 import "github.com/cjoudrey/gluahttp"
 
 func main() {
@@ -23,16 +23,45 @@ func main() {
     L.PreloadModule("http", NewHttpModule(&http.Client{}).Loader)
 
     if err := L.DoString(`
-
-        local http = require("http")
-
-        response, error_message = http.request("GET", "http://example.com", {
-            params="page=1"
-            headers={
-                Accept="*/*"
-            }
-        })
-
+local http = require("http")
+response, error_message = http.post("http://www.jd.com?x=1", {
+	params={
+		page="测试",
+		x="2"
+	},
+	data={
+		a=1,
+		b="2"
+	},
+	files={
+		file="/x.txt"
+	},
+	--json='{"a":"测试"}',
+	--rawdata="aaa'gdgd",
+	headers={
+		Accept="*/*",
+		Test="xxx",
+		["User-Agent"]="testUserAgent"
+	},
+	cookies={
+		session="xxx",
+		user="test"
+	},
+	--proxy="http://127.0.0.1:8080",
+	timeout=3,
+	redirect=false,
+	verifycert=false
+})
+if error_message
+then
+	print(error_message)
+else
+	print(response.schema)
+	print(response.raw_request)
+--	print(response.body)
+	print(response.headers["Content-Type"])
+	print(response.headers["Location"])
+end
     `); err != nil {
         panic(err)
     }
