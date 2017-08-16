@@ -1,7 +1,11 @@
 package gluahttp
 
-import "github.com/yuin/gopher-lua"
-import "net/http"
+import (
+	"io/ioutil"
+	"net/http"
+
+	"github.com/yuin/gopher-lua"
+)
 
 const luaHttpResponseTypeName = "http.response"
 
@@ -54,8 +58,11 @@ func httpResponseIndex(L *lua.LState) int {
 		return httpResponseBody(res, L)
 	case "body_size":
 		return httpResponseBodySize(res, L)
+	case "raw_request":
+		return httpRawRequest(res, L)
+	case "schema":
+		return httpRequestSchema(res, L)
 	}
-
 	return 0
 }
 
@@ -94,5 +101,29 @@ func httpResponseBody(res *luaHttpResponse, L *lua.LState) int {
 
 func httpResponseBodySize(res *luaHttpResponse, L *lua.LState) int {
 	L.Push(lua.LNumber(res.bodySize))
+	return 1
+}
+
+func httpRawRequest(res *luaHttpResponse, L *lua.LState) int {
+	r := res.res.Request
+	rawRequest := r.Method + " " + r.URL.RequestURI() + " " + r.Proto + "\r\n"
+	rawRequest += "Host: " + r.Host + "\r\n"
+	for key, val := range r.Header {
+		rawRequest += key + ": " + val[0] + "\r\n"
+	}
+	rawRequest += "\r\n"
+	body, _ := r.GetBody()
+	defer body.Close()
+	buf, err := ioutil.ReadAll(body)
+	if err != nil {
+		L.ArgError(1, err.Error())
+	}
+	rawRequest += string(buf)
+	L.Push(lua.LString(rawRequest))
+	return 1
+}
+
+func httpRequestSchema(res *luaHttpResponse, L *lua.LState) int {
+	L.Push(lua.LString(res.res.Request.URL.Scheme))
 	return 1
 }

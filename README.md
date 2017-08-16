@@ -27,7 +27,7 @@ func main() {
         local http = require("http")
 
         response, error_message = http.request("GET", "http://example.com", {
-            query="page=1"
+            params="page=1"
             headers={
                 Accept="*/*"
             }
@@ -47,8 +47,6 @@ func main() {
 - [`http.patch(url [, options])`](#httppatchurl--options)
 - [`http.post(url [, options])`](#httpposturl--options)
 - [`http.put(url [, options])`](#httpputurl--options)
-- [`http.request(method, url [, options])`](#httprequestmethod-url--options)
-- [`http.request_batch(requests)`](#httprequest_batchrequests)
 - [`http.response`](#httpresponse)
 
 ### http.delete(url [, options])
@@ -62,11 +60,15 @@ func main() {
 
 **Options**
 
-| Name    | Type   | Description |
-| ------- | ------ | ----------- |
-| query   | String | URL encoded query params |
-| cookies | Table  | Additional cookies to send with the request |
-| headers | Table  | Additional headers to send with the request |
+| Name       | Type    | Description |
+| ---------- | ------- | ----------- |
+| params     | String  | URL encoded query params |
+| cookies    | Table   | Additional cookies to send with the request |
+| headers    | Table   | Additional headers to send with the request |
+| proxy      | String  | Proxy |
+| timeout    | Float64 | Dial timeout |
+| redirect   | Bool    | Whether follow redirect |
+| verifycert | Bool    | Whether verify server cert |
 
 **Returns**
 
@@ -83,11 +85,15 @@ func main() {
 
 **Options**
 
-| Name    | Type   | Description |
-| ------- | ------ | ----------- |
-| query   | String | URL encoded query params |
-| cookies | Table  | Additional cookies to send with the request |
-| headers | Table  | Additional headers to send with the request |
+| Name       | Type    | Description |
+| ---------- | ------- | ----------- |
+| params     | String  | URL encoded query params |
+| cookies    | Table   | Additional cookies to send with the request |
+| headers    | Table   | Additional headers to send with the request |
+| proxy      | String  | Proxy |
+| timeout    | Float64 | Dial timeout |
+| redirect   | Bool    | Whether follow redirect |
+| verifycert | Bool    | Whether verify server cert |
 
 **Returns**
 
@@ -106,9 +112,12 @@ func main() {
 
 | Name    | Type   | Description |
 | ------- | ------ | ----------- |
-| query   | String | URL encoded query params |
+| params   | Table | URL encoded query params |
 | cookies | Table  | Additional cookies to send with the request |
 | headers | Table  | Additional headers to send with the request |
+| proxy      | String  | Proxy |
+| timeout    | Float64 | Dial timeout |
+| verifycert | Bool    | Whether verify server cert |
 
 **Returns**
 
@@ -125,13 +134,20 @@ func main() {
 
 **Options**
 
-| Name    | Type   | Description |
-| ------- | ------ | ----------- |
-| query   | String | URL encoded query params |
-| cookies | Table  | Additional cookies to send with the request |
-| body    | String | Request body. |
-| form    | String | Deprecated. URL encoded request body. This will also set the `Content-Type` header to `application/x-www-form-urlencoded` |
-| headers | Table  | Additional headers to send with the request |
+| Name       | Type    | Description |
+| ---------- | ------- | ----------- |
+| params     | Table   | URL encoded query params |
+| headers    | Table   | Additional headers to send with the request |
+| cookies    | Table   | Additional cookies to send with the request |
+| data       | Table   | Deprecated. URL encoded request body. This will also set the `Content-Type` header to `application/x-www-form-urlencoded` |
+| rawdata    | String  | Raw request body. |
+| json       | String  | Json, This will also set the `Content-Type` header to `application/json` |
+| files      | Table   | Upload files, example {file="filepath/file.txt"}, This will also set the `Content-Type` header to `multipart/form-data`, at the same time, you can add data params |
+| proxy      | String  | Proxy |
+| timeout    | Float64 | Dial timeout |
+| redirect   | Bool    | Whether follow redirect |
+| verifycert | Bool    | Whether verify server cert |
+
 
 **Returns**
 
@@ -148,13 +164,19 @@ func main() {
 
 **Options**
 
-| Name    | Type   | Description |
-| ------- | ------ | ----------- |
-| query   | String | URL encoded query params |
-| cookies | Table  | Additional cookies to send with the request |
-| body    | String | Request body. |
-| form    | String | Deprecated. URL encoded request body. This will also set the `Content-Type` header to `application/x-www-form-urlencoded` |
-| headers | Table  | Additional headers to send with the request |
+| Name       | Type    | Description |
+| ---------- | ------- | ----------- |
+| params     | Table   | URL encoded query params |
+| headers    | Table   | Additional headers to send with the request |
+| cookies    | Table   | Additional cookies to send with the request |
+| data       | Table   | Deprecated. URL encoded request body. This will also set the `Content-Type` header to `application/x-www-form-urlencoded` |
+| rawdata    | String  | Raw request body. |
+| json       | String  | Json, This will also set the `Content-Type` header to `application/json` |
+| files      | Table   | Upload files, example {file="filepath/file.txt"}, This will also set the `Content-Type` header to `multipart/form-data`, at the same time, you can add data params |
+| proxy      | String  | Proxy |
+| timeout    | Float64 | Dial timeout |
+| redirect   | Bool    | Whether follow redirect |
+| verifycert | Bool    | Whether verify server cert |
 
 **Returns**
 
@@ -171,25 +193,30 @@ func main() {
 
 **Options**
 
-| Name    | Type   | Description |
-| ------- | ------ | ----------- |
-| query   | String | URL encoded query params |
-| cookies | Table  | Additional cookies to send with the request |
-| body    | String | Request body. |
-| form    | String | Deprecated. URL encoded request body. This will also set the `Content-Type` header to `application/x-www-form-urlencoded` |
-| headers | Table  | Additional headers to send with the request |
+| Name       | Type    | Description |
+| ---------- | ------- | ----------- |
+| params     | Table   | URL encoded query params |
+| headers    | Table   | Additional headers to send with the request |
+| cookies    | Table   | Additional cookies to send with the request |
+| data       | Table   | Deprecated. URL encoded request body. This will also set the `Content-Type` header to `application/x-www-form-urlencoded` |
+| rawdata    | String  | Raw request body. |
+| json       | String  | Json, This will also set the `Content-Type` header to `application/json` |
+| files      | Table   | Upload files, example {file="filepath/file.txt"}, This will also set the `Content-Type` header to `multipart/form-data`, at the same time, you can add data params |
+| proxy      | String  | Proxy |
+| timeout    | Float64 | Dial timeout |
+| redirect   | Bool    | Whether follow redirect |
+| verifycert | Bool    | Whether verify server cert |
 
 **Returns**
 
 [http.response](#httpresponse) or (nil, error message)
 
-### http.request(method, url [, options])
+### http.options(url [, options])
 
 **Attributes**
 
 | Name    | Type   | Description |
 | ------- | ------ | ----------- |
-| method  | String | The HTTP request method |
 | url     | String | URL of the resource to load |
 | options | Table  | Additional options |
 
@@ -197,39 +224,13 @@ func main() {
 
 | Name    | Type   | Description |
 | ------- | ------ | ----------- |
-| query   | String | URL encoded query params |
+| params   | Table | URL encoded query params |
 | cookies | Table  | Additional cookies to send with the request |
-| body    | String | Request body. |
-| form    | String | Deprecated. URL encoded request body. This will also set the `Content-Type` header to `application/x-www-form-urlencoded` |
 | headers | Table  | Additional headers to send with the request |
+| proxy      | String  | Proxy |
+| timeout    | Float64 | Dial timeout |
+| verifycert | Bool    | Whether verify server cert |
 
 **Returns**
 
 [http.response](#httpresponse) or (nil, error message)
-
-### http.request_batch(requests)
-
-**Attributes**
-
-| Name     | Type  | Description |
-| -------- | ----- | ----------- |
-| requests | Table | A table of requests to send. Each request item is by itself a table containing [http.request](#httprequestmethod-url--options) parameters for the request |
-
-**Returns**
-
-[[http.response](#httpresponse)] or ([[http.response](#httpresponse)], [error message])
-
-### http.response
-
-The `http.response` table contains information about a completed HTTP request.
-
-**Attributes**
-
-| Name        | Type   | Description |
-| ----------- | ------ | ----------- |
-| body        | String | The HTTP response body |
-| body_size   | Number | The size of the HTTP reponse body in bytes |
-| headers     | Table  | The HTTP response headers |
-| cookies     | Table  | The cookies sent by the server in the HTTP response |
-| status_code | Number | The HTTP response status code |
-| url         | String | The final URL the request ended pointing to after redirects |

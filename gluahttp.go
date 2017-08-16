@@ -1,34 +1,44 @@
 package gluahttp
 
-import "github.com/yuin/gopher-lua"
-import "net/http"
-import "fmt"
-import "errors"
-import "io/ioutil"
-import "strings"
+import (
+	"bytes"
+	"crypto/tls"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"mime/multipart"
+	"net"
+	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/yuin/gopher-lua"
+)
 
 type httpModule struct {
 	client *http.Client
 }
 
-type empty struct{}
-
-func NewHttpModule(client *http.Client) *httpModule {
+func NewHttpModule() *httpModule {
 	return &httpModule{
-		client: client,
+		client: &http.Client{},
 	}
 }
 
+type empty struct{}
+
 func (h *httpModule) Loader(L *lua.LState) int {
 	mod := L.SetFuncs(L.NewTable(), map[string]lua.LGFunction{
-		"get":           h.get,
-		"delete":        h.delete,
-		"head":          h.head,
-		"patch":         h.patch,
-		"post":          h.post,
-		"put":           h.put,
-		"request":       h.request,
-		"request_batch": h.requestBatch,
+		"get":     h.get,
+		"delete":  h.delete,
+		"head":    h.head,
+		"patch":   h.patch,
+		"post":    h.post,
+		"put":     h.put,
+		"options": h.options,
 	})
 	registerHttpResponseType(mod, L)
 	L.Push(mod)
@@ -36,151 +46,172 @@ func (h *httpModule) Loader(L *lua.LState) int {
 }
 
 func (h *httpModule) get(L *lua.LState) int {
-	return h.doRequestAndPush(L, "get", L.ToString(1), L.ToTable(2))
+	return h.doRequestAndPush(L, "GET", L.ToString(1), L.ToTable(2))
 }
 
 func (h *httpModule) delete(L *lua.LState) int {
-	return h.doRequestAndPush(L, "delete", L.ToString(1), L.ToTable(2))
+	return h.doRequestAndPush(L, "DELETE", L.ToString(1), L.ToTable(2))
 }
 
 func (h *httpModule) head(L *lua.LState) int {
-	return h.doRequestAndPush(L, "head", L.ToString(1), L.ToTable(2))
+	return h.doRequestAndPush(L, "HEAD", L.ToString(1), L.ToTable(2))
 }
 
 func (h *httpModule) patch(L *lua.LState) int {
-	return h.doRequestAndPush(L, "patch", L.ToString(1), L.ToTable(2))
+	return h.doRequestAndPush(L, "PATCH", L.ToString(1), L.ToTable(2))
 }
 
 func (h *httpModule) post(L *lua.LState) int {
-	return h.doRequestAndPush(L, "post", L.ToString(1), L.ToTable(2))
+	return h.doRequestAndPush(L, "POST", L.ToString(1), L.ToTable(2))
 }
 
 func (h *httpModule) put(L *lua.LState) int {
-	return h.doRequestAndPush(L, "put", L.ToString(1), L.ToTable(2))
+	return h.doRequestAndPush(L, "PUT", L.ToString(1), L.ToTable(2))
 }
 
-func (h *httpModule) request(L *lua.LState) int {
-	return h.doRequestAndPush(L, L.ToString(1), L.ToString(2), L.ToTable(3))
+func (h *httpModule) options(L *lua.LState) int {
+	return h.doRequestAndPush(L, "OPTIONS", L.ToString(1), L.ToTable(2))
 }
 
-func (h *httpModule) requestBatch(L *lua.LState) int {
-	requests := L.ToTable(1)
-	amountRequests := requests.Len()
+func newfileUploadRequest(method, uri string, data *lua.LTable, files *lua.LTable) (*http.Request, error) {
+	var (
+		f   *os.File
+		err error
+	)
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
 
-	errs := make([]error, amountRequests)
-	responses := make([]*lua.LUserData, amountRequests)
-	sem := make(chan empty, amountRequests)
-
-	i := 0
-
-	requests.ForEach(func(_ lua.LValue, value lua.LValue) {
-		requestTable := toTable(value)
-
-		if requestTable != nil {
-			method := requestTable.RawGet(lua.LNumber(1)).String()
-			url := requestTable.RawGet(lua.LNumber(2)).String()
-			options := toTable(requestTable.RawGet(lua.LNumber(3)))
-
-			go func(i int, L *lua.LState, method string, url string, options *lua.LTable) {
-				response, err := h.doRequest(L, method, url, options)
-
+	if files != nil {
+		files.ForEach(func(name, filePath lua.LValue) {
+			f, err = os.Open(filePath.String())
+			if err == nil {
+				part, err := writer.CreateFormFile(name.String(), filepath.Base(filePath.String()))
 				if err == nil {
-					errs[i] = nil
-					responses[i] = response
-				} else {
-					errs[i] = err
-					responses[i] = nil
+					_, err = io.Copy(part, f)
 				}
-
-				sem <- empty{}
-			}(i, L, method, url, options)
-		} else {
-			errs[i] = errors.New("Request must be a table")
-			responses[i] = nil
-			sem <- empty{}
-		}
-
-		i = i + 1
-	})
-
-	for i = 0; i < amountRequests; i++ {
-		<-sem
+				f.Close()
+			}
+		})
 	}
-
-	hasErrors := false
-	errorsTable := L.NewTable()
-	responsesTable := L.NewTable()
-	for i = 0; i < amountRequests; i++ {
-		if errs[i] == nil {
-			responsesTable.Append(responses[i])
-			errorsTable.Append(lua.LNil)
-		} else {
-			responsesTable.Append(lua.LNil)
-			errorsTable.Append(lua.LString(fmt.Sprintf("%s", errs[i])))
-			hasErrors = true
-		}
-	}
-
-	if hasErrors {
-		L.Push(responsesTable)
-		L.Push(errorsTable)
-		return 2
-	} else {
-		L.Push(responsesTable)
-		return 1
-	}
-}
-
-func (h *httpModule) doRequest(L *lua.LState, method string, url string, options *lua.LTable) (*lua.LUserData, error) {
-	req, err := http.NewRequest(strings.ToUpper(method), url, nil)
 	if err != nil {
 		return nil, err
 	}
 
+	if data != nil {
+		data.ForEach(func(key, value lua.LValue) {
+			writer.WriteField(key.String(), value.String())
+		})
+	}
+	err = writer.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(method, uri, body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	return req, err
+}
+
+func (h *httpModule) doRequest(L *lua.LState, method string, uri string, options *lua.LTable) (*lua.LUserData, error) {
+	var (
+		req *http.Request
+		err error
+	)
 	if options != nil {
+		transport := &http.Transport{}
+		if reqVerify, ok := options.RawGet(lua.LString("verifycert")).(lua.LBool); ok {
+			transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: bool(reqVerify)}
+		}
+
+		if reqTimeout, ok := options.RawGet(lua.LString("timeout")).(lua.LNumber); ok {
+			timeout := time.Second * time.Duration(float64(lua.LVAsNumber(reqTimeout)))
+			transport.Dial = func(network, addr string) (net.Conn, error) {
+				conn, err := net.DialTimeout(network, addr, timeout)
+				if err != nil {
+					return nil, err
+				}
+				conn.SetDeadline(time.Now().Add(timeout))
+				return conn, nil
+			}
+		}
+
+		if reqProxy, ok := options.RawGet(lua.LString("proxy")).(lua.LString); ok {
+			if reqProxy.String() == "" {
+				transport.Proxy = nil
+			} else {
+				parsedProxyUrl, err := url.Parse(reqProxy.String())
+				if err != nil {
+					return nil, err
+				}
+				transport.Proxy = http.ProxyURL(parsedProxyUrl)
+			}
+		}
+
+		if reqRedirect, ok := options.RawGet(lua.LString("redirect")).(lua.LBool); ok {
+			if !bool(reqRedirect) {
+				h.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+					return http.ErrUseLastResponse
+				}
+			}
+		}
+
+		h.client.Transport = transport
+
+		if reqFiles, ok := options.RawGet(lua.LString("files")).(*lua.LTable); ok {
+			if reqData, ok := options.RawGet(lua.LString("data")).(*lua.LTable); ok {
+				req, err = newfileUploadRequest(method, uri, reqData, reqFiles)
+			} else {
+				req, err = newfileUploadRequest(method, uri, nil, reqFiles)
+			}
+		} else if reqData, ok := options.RawGet(lua.LString("data")).(*lua.LTable); ok {
+			urlValues := &url.Values{}
+			reqData.ForEach(func(key, value lua.LValue) {
+				urlValues.Set(key.String(), value.String())
+			})
+			req, err = http.NewRequest(method, uri, strings.NewReader(urlValues.Encode()))
+			if err == nil {
+				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			}
+		} else if reqRawData, ok := options.RawGet(lua.LString("rawdata")).(lua.LString); ok {
+			req, err = http.NewRequest(method, uri, strings.NewReader(reqRawData.String()))
+		} else if reqJson, ok := options.RawGet(lua.LString("json")).(lua.LString); ok {
+			req, err = http.NewRequest(method, uri, strings.NewReader(reqJson.String()))
+			if err == nil {
+				req.Header.Set("Content-Type", "application/json")
+			}
+		} else {
+			req, err = http.NewRequest(method, uri, nil)
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		if reqHeaders, ok := options.RawGet(lua.LString("headers")).(*lua.LTable); ok {
+			reqHeaders.ForEach(func(key, value lua.LValue) {
+				req.Header.Set(key.String(), value.String())
+			})
+		}
 		if reqCookies, ok := options.RawGet(lua.LString("cookies")).(*lua.LTable); ok {
 			reqCookies.ForEach(func(key lua.LValue, value lua.LValue) {
 				req.AddCookie(&http.Cookie{Name: key.String(), Value: value.String()})
 			})
 		}
-
-		switch reqQuery := options.RawGet(lua.LString("query")).(type) {
-		case lua.LString:
-			req.URL.RawQuery = reqQuery.String()
-		}
-
-		body := options.RawGet(lua.LString("body"))
-		if _, ok := body.(lua.LString); !ok {
-			// "form" is deprecated.
-			body = options.RawGet(lua.LString("form"))
-			// Only set the Content-Type to application/x-www-form-urlencoded
-			// when someone uses "form", not for "body".
-			if _, ok := body.(lua.LString); ok {
-				req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			}
-		}
-
-		switch reqBody := body.(type) {
-		case lua.LString:
-			body := reqBody.String()
-			req.ContentLength = int64(len(body))
-			req.Body = ioutil.NopCloser(strings.NewReader(body))
-		}
-
-		// Set these last. That way the code above doesn't overwrite them.
-		if reqHeaders, ok := options.RawGet(lua.LString("headers")).(*lua.LTable); ok {
-			reqHeaders.ForEach(func(key lua.LValue, value lua.LValue) {
-				req.Header.Set(key.String(), value.String())
+		if reqParams, ok := options.RawGet(lua.LString("params")).(*lua.LTable); ok {
+			parsedQuery := req.URL.Query()
+			reqParams.ForEach(func(key, value lua.LValue) {
+				if _, ok := parsedQuery[key.String()]; ok {
+					parsedQuery.Add(key.String(), value.String())
+					return
+				}
+				parsedQuery.Set(key.String(), value.String())
 			})
+			req.URL.RawQuery = parsedQuery.Encode()
 		}
 	}
-
 	res, err := h.client.Do(req)
-
 	if err != nil {
 		return nil, err
 	}
-
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 
@@ -191,8 +222,8 @@ func (h *httpModule) doRequest(L *lua.LState, method string, url string, options
 	return newHttpResponse(res, &body, len(body), L), nil
 }
 
-func (h *httpModule) doRequestAndPush(L *lua.LState, method string, url string, options *lua.LTable) int {
-	response, err := h.doRequest(L, method, url, options)
+func (h *httpModule) doRequestAndPush(L *lua.LState, method string, uri string, options *lua.LTable) int {
+	response, err := h.doRequest(L, method, uri, options)
 
 	if err != nil {
 		L.Push(lua.LNil)
