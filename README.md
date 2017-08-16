@@ -47,6 +47,7 @@ func main() {
 - [`http.patch(url [, options])`](#httppatchurl--options)
 - [`http.post(url [, options])`](#httpposturl--options)
 - [`http.put(url [, options])`](#httpputurl--options)
+- [`http.options(url [, options])`](#httpputurl--options)
 - [`http.response`](#httpresponse)
 
 ### http.delete(url [, options])
