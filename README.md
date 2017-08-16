@@ -66,7 +66,7 @@ else
 	print(response.headers["Content-Type"])
 	print(response.headers["Location"])
 end
-    `); err != nil {
+	`); err != nil {
 		panic(err)
 	}
 }
