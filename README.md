@@ -13,6 +13,18 @@ go get github.com/cjoudrey/gluahttp
 ## Usage
 
 ```go
+package main
+
+import "github.com/yuin/gopher-lua"
+import "github.com/Greyh4t/gluahttp"
+
+func main() {
+	L := lua.NewState()
+	defer L.Close()
+
+	L.PreloadModule("http", gluahttp.NewHttpModule().Loader)
+
+	if err := L.DoString(`
 local http = require("http")
 response, error_message = http.post("http://www.example.com?x=1", {
 	params={
@@ -54,6 +66,10 @@ else
 	print(response.headers["Content-Type"])
 	print(response.headers["Location"])
 end
+    `); err != nil {
+		panic(err)
+	}
+}
 ```
 
 ## API
