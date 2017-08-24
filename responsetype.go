@@ -119,8 +119,8 @@ func httpRawRequest(res *luaHttpResponse, L *lua.LState) int {
 	if r.GetBody != nil {
 		body, err := r.GetBody()
 		if err == nil {
-			defer body.Close()
 			buf, err := ioutil.ReadAll(body)
+			body.Close()
 			if err != nil {
 				L.ArgError(1, err.Error())
 			}
