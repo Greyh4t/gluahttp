@@ -112,13 +112,17 @@ func httpRawRequest(res *luaHttpResponse, L *lua.LState) int {
 		rawRequest += key + ": " + val[0] + "\r\n"
 	}
 	rawRequest += "\r\n"
-	body, _ := r.GetBody()
-	defer body.Close()
-	buf, err := ioutil.ReadAll(body)
-	if err != nil {
-		L.ArgError(1, err.Error())
+	if r.GetBody != nil {
+		body, err := r.GetBody()
+		if err == nil {
+			defer body.Close()
+			buf, err := ioutil.ReadAll(body)
+			if err != nil {
+				L.ArgError(1, err.Error())
+			}
+			rawRequest += string(buf)
+		}
 	}
-	rawRequest += string(buf)
 	L.Push(lua.LString(rawRequest))
 	return 1
 }
