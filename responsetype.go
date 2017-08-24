@@ -107,7 +107,11 @@ func httpResponseBodySize(res *luaHttpResponse, L *lua.LState) int {
 func httpRawRequest(res *luaHttpResponse, L *lua.LState) int {
 	r := res.res.Request
 	rawRequest := r.Method + " " + r.URL.RequestURI() + " " + r.Proto + "\r\n"
-	rawRequest += "Host: " + r.Host + "\r\n"
+	host := r.Host
+	if host == "" {
+		host = r.URL.Host
+	}
+	rawRequest += "Host: " + host + "\r\n"
 	for key, val := range r.Header {
 		rawRequest += key + ": " + val[0] + "\r\n"
 	}
