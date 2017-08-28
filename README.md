@@ -35,6 +35,7 @@ response, error_message = http.post("http://www.example.com?x=1", {
 		a=1,
 		b="2"
 	},
+	--basicauth={"user", "passwd"},
 	--files={
 	--	file="/x.txt"
 	--},
@@ -104,6 +105,7 @@ end
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
+| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
@@ -130,6 +132,7 @@ end
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
+| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
@@ -155,6 +158,7 @@ end
 | timeout    | Float64 | Dial timeout |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
+| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
@@ -185,6 +189,7 @@ end
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
+| basicauth  | Table   | Set BasicAuth |
 
 
 **Returns**
@@ -216,6 +221,7 @@ end
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
+| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
@@ -246,6 +252,7 @@ end
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
+| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
@@ -271,6 +278,7 @@ end
 | timeout    | Float64 | Dial timeout |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
+| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
