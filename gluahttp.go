@@ -120,7 +120,7 @@ func (h *httpModule) doRequest(L *lua.LState, method string, uri string, options
 	if options != nil {
 		transport := &http.Transport{}
 		if reqVerify, ok := options.RawGet(lua.LString("verifycert")).(lua.LBool); ok {
-			transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: bool(reqVerify)}
+			transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: !bool(reqVerify)}
 		}
 
 		if reqTimeout, ok := options.RawGet(lua.LString("timeout")).(lua.LNumber); ok {
