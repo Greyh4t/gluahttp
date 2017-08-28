@@ -212,7 +212,7 @@ func (h *httpModule) doRequest(L *lua.LState, method string, uri string, options
 		}
 
 		if reqBasicAuth, ok := options.RawGet(lua.LString("basicauth")).(*lua.LTable); ok {
-			req.SetBasicAuth(reqBasicAuth.RawGetInt(0).String(), reqBasicAuth.RawGetInt(1).String())
+			req.SetBasicAuth(reqBasicAuth.RawGetInt(1).String(), reqBasicAuth.RawGetInt(2).String())
 		}
 	}
 	req.Close = true
