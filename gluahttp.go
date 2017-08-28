@@ -211,6 +211,7 @@ func (h *httpModule) doRequest(L *lua.LState, method string, uri string, options
 			req.Host = reqHost.String()
 		}
 	}
+	req.Close = true
 	res, err := h.client.Do(req)
 	if err != nil {
 		return nil, err
