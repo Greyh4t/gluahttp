@@ -223,10 +223,3 @@ func doRequestAndPush(L *lua.LState, method string, uri string, options *lua.LTa
 	L.Push(response)
 	return 1
 }
-
-func toTable(v lua.LValue) *lua.LTable {
-	if lv, ok := v.(*lua.LTable); ok {
-		return lv
-	}
-	return nil
-}
