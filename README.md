@@ -122,6 +122,7 @@ end
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
+| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
@@ -148,6 +149,7 @@ end
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
+| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
@@ -173,6 +175,7 @@ end
 | timeout    | Float64 | Dial timeout |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
+| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
@@ -203,6 +206,7 @@ end
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
+| basicauth  | Table   | Set BasicAuth |
 
 
 **Returns**
@@ -234,6 +238,7 @@ end
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
+| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
@@ -264,6 +269,7 @@ end
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
+| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
@@ -289,11 +295,11 @@ end
 | timeout    | Float64 | Dial timeout |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
+| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
 [http.response](#httpresponse) or (nil, error message)
-
 
 ### http.response
 
