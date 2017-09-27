@@ -1,7 +1,6 @@
 package gluahttp
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -82,8 +81,6 @@ func rawRequest(resp *http.Response) lua.LValue {
 			body.Close()
 			if err == nil {
 				rawRequest += string(buf)
-			} else {
-				fmt.Println(err)
 			}
 		}
 	}
