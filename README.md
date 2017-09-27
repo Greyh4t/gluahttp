@@ -22,11 +22,11 @@ func main() {
 	L := lua.NewState()
 	defer L.Close()
 
-	L.PreloadModule("http", gluahttp.NewHttpModule().Loader)
+	L.PreloadModule("http", gluahttp.Loader)
 
 	if err := L.DoString(`
 local http = require("http")
-response, error_message = http.post("http://www.example.com?x=1", {
+resp, err = http.post("http://www.example.com?x=1", {
 	params={
 		page="测试",
 		x="2"
@@ -56,16 +56,33 @@ response, error_message = http.post("http://www.example.com?x=1", {
 	redirect=false,
 	verifycert=false
 })
-if error_message
+if err
 then
-	print(error_message)
+	print(err)
 else
-	print(response.status_code)
-	print(response.request_schema)
-	print(response.raw_request)
---	print(response.body)
-	print(response.headers["Content-Type"])
-	print(response.headers["Location"])
+	print(resp.status_code)
+	print("--------------")
+	print(resp.body_size)
+	print("--------------")
+	print(resp.body)
+	print("--------------")
+	print(resp.header)
+	print("--------------")
+	print(resp.header["Content-Type"])
+	print("--------------")
+	print(resp.raw_header)
+	print("--------------")
+	print(resp.cookie)
+	print("--------------")
+	print(resp.raw_cookie)
+	print("--------------")
+	print(resp.url)
+	print("--------------")
+	print(resp.req_scheme)
+	print("--------------")
+	print(resp.proto)
+	print("--------------")
+	print(resp.raw_req)
 end
 	`); err != nil {
 		panic(err)
@@ -105,7 +122,6 @@ end
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
-| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
@@ -132,7 +148,6 @@ end
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
-| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
@@ -158,7 +173,6 @@ end
 | timeout    | Float64 | Dial timeout |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
-| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
@@ -189,7 +203,6 @@ end
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
-| basicauth  | Table   | Set BasicAuth |
 
 
 **Returns**
@@ -221,7 +234,6 @@ end
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
-| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
@@ -252,7 +264,6 @@ end
 | redirect   | Bool    | Whether follow redirect |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
-| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
@@ -278,8 +289,28 @@ end
 | timeout    | Float64 | Dial timeout |
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
-| basicauth  | Table   | Set BasicAuth |
 
 **Returns**
 
 [http.response](#httpresponse) or (nil, error message)
+
+
+### http.response
+
+The `http.response` table contains information about a completed HTTP request.
+
+**Attributes**
+
+| Name        | Type   | Description |
+| ----------- | ------ | ----------- |
+| body        | String | The HTTP response body |
+| body_size   | Number | The size of the HTTP reponse body in bytes |
+| header      | Table  | The HTTP response headers |
+| raw_header  | String | The HTTP response raw headers |
+| cookie      | Table  | The cookies sent by the server in the HTTP response |
+| raw_cookie  | String | The formated cookies sent by the server in the HTTP response |
+| status_code | Number | The HTTP response status code |
+| url         | String | The final URL the request ended pointing to after redirects |
+| req_scheme  | String | The scheme of request |
+| raw_req     | String | The raw request |
+| proto       | String | The proto of request |

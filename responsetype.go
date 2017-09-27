@@ -1,111 +1,70 @@
 package gluahttp
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/yuin/gopher-lua"
 )
 
-const luaHttpResponseTypeName = "http.response"
-
-type luaHttpResponse struct {
-	res      *http.Response
-	body     lua.LString
-	bodySize int
+func makeResp(L *lua.LState, resp *http.Response, body string) lua.LValue {
+	luaResp := L.NewTable()
+	luaResp.RawSetString("status_code", lua.LNumber(resp.StatusCode))
+	luaResp.RawSetString("body", lua.LString(body))
+	luaResp.RawSetString("body_size", lua.LNumber(len(body)))
+	luaResp.RawSetString("header", header(L, resp))
+	luaResp.RawSetString("raw_header", rawHeader(resp))
+	luaResp.RawSetString("cookie", cookie(L, resp))
+	luaResp.RawSetString("raw_cookie", rawCookie(resp))
+	luaResp.RawSetString("url", lua.LString(resp.Request.URL.String()))
+	luaResp.RawSetString("req_scheme", lua.LString(resp.Request.URL.Scheme))
+	luaResp.RawSetString("raw_req", rawRequest(resp))
+	luaResp.RawSetString("proto", lua.LString(resp.Proto))
+	return luaResp
 }
 
-func registerHttpResponseType(module *lua.LTable, L *lua.LState) {
-	mt := L.NewTypeMetatable(luaHttpResponseTypeName)
-	L.SetField(mt, "__index", L.NewFunction(httpResponseIndex))
-
-	L.SetField(module, "response", mt)
-}
-
-func newHttpResponse(res *http.Response, body *[]byte, bodySize int, L *lua.LState) *lua.LUserData {
-	ud := L.NewUserData()
-	ud.Value = &luaHttpResponse{
-		res:      res,
-		body:     lua.LString(*body),
-		bodySize: bodySize,
+func rawHeader(resp *http.Response) lua.LValue {
+	var rawHeader string
+	for name, v := range resp.Header {
+		for _, vaule := range v {
+			rawHeader += name + ": " + vaule + "\r\n"
+		}
 	}
-	L.SetMetatable(ud, L.GetTypeMetatable(luaHttpResponseTypeName))
-	return ud
+	return lua.LString(strings.TrimSuffix(rawHeader, "\r\n"))
 }
 
-func checkHttpResponse(L *lua.LState) *luaHttpResponse {
-	ud := L.CheckUserData(1)
-	if v, ok := ud.Value.(*luaHttpResponse); ok {
-		return v
+func header(L *lua.LState, resp *http.Response) lua.LValue {
+	table := L.NewTable()
+	for k, v := range resp.Header {
+		var each string
+		for _, header := range v {
+			each += header + ", "
+		}
+		table.RawSetString(k, lua.LString(strings.TrimSuffix(each, ", ")))
 	}
-	L.ArgError(1, "http.response expected")
-	return nil
+	return table
 }
 
-func httpResponseIndex(L *lua.LState) int {
-	res := checkHttpResponse(L)
-
-	switch L.CheckString(2) {
-	case "headers":
-		return httpResponseHeaders(res, L)
-	case "cookies":
-		return httpResponseCookies(res, L)
-	case "status_code":
-		return httpResponseStatusCode(res, L)
-	case "url":
-		return httpResponseUrl(res, L)
-	case "body":
-		return httpResponseBody(res, L)
-	case "body_size":
-		return httpResponseBodySize(res, L)
-	case "raw_request":
-		return httpRawRequest(res, L)
-	case "request_schema":
-		return httpRequestSchema(res, L)
+func rawCookie(resp *http.Response) lua.LValue {
+	var rawCookie string
+	for _, cookie := range resp.Cookies() {
+		rawCookie += cookie.Name + "=" + cookie.Value + ";"
 	}
-	return 0
+	return lua.LString(strings.TrimSuffix(rawCookie, ";"))
 }
 
-func httpResponseHeaders(res *luaHttpResponse, L *lua.LState) int {
-	headers := L.NewTable()
-	for key, _ := range res.res.Header {
-		headers.RawSetString(key, lua.LString(res.res.Header.Get(key)))
+func cookie(L *lua.LState, resp *http.Response) lua.LValue {
+	table := L.NewTable()
+	for _, cookie := range resp.Cookies() {
+		table.RawSetString(cookie.Name, lua.LString(cookie.Value))
 	}
-	L.Push(headers)
-	return 1
+	return table
 }
 
-func httpResponseCookies(res *luaHttpResponse, L *lua.LState) int {
-	cookies := L.NewTable()
-	for _, cookie := range res.res.Cookies() {
-		cookies.RawSetString(cookie.Name, lua.LString(cookie.Value))
-	}
-	L.Push(cookies)
-	return 1
-}
-
-func httpResponseStatusCode(res *luaHttpResponse, L *lua.LState) int {
-	L.Push(lua.LNumber(res.res.StatusCode))
-	return 1
-}
-
-func httpResponseUrl(res *luaHttpResponse, L *lua.LState) int {
-	L.Push(lua.LString(res.res.Request.URL.String()))
-	return 1
-}
-
-func httpResponseBody(res *luaHttpResponse, L *lua.LState) int {
-	L.Push(res.body)
-	return 1
-}
-
-func httpResponseBodySize(res *luaHttpResponse, L *lua.LState) int {
-	L.Push(lua.LNumber(res.bodySize))
-	return 1
-}
-
-func httpRawRequest(res *luaHttpResponse, L *lua.LState) int {
-	r := res.res.Request
+func rawRequest(resp *http.Response) lua.LValue {
+	r := resp.Request
 	rawRequest := r.Method + " " + r.URL.RequestURI() + " " + r.Proto + "\r\n"
 	host := r.Host
 	if host == "" {
@@ -121,17 +80,12 @@ func httpRawRequest(res *luaHttpResponse, L *lua.LState) int {
 		if err == nil {
 			buf, err := ioutil.ReadAll(body)
 			body.Close()
-			if err != nil {
-				L.ArgError(1, err.Error())
+			if err == nil {
+				rawRequest += string(buf)
+			} else {
+				fmt.Println(err)
 			}
-			rawRequest += string(buf)
 		}
 	}
-	L.Push(lua.LString(rawRequest))
-	return 1
-}
-
-func httpRequestSchema(res *luaHttpResponse, L *lua.LState) int {
-	L.Push(lua.LString(res.res.Request.URL.Scheme))
-	return 1
+	return lua.LString(rawRequest)
 }
