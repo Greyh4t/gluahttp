@@ -13,10 +13,10 @@ func makeResp(L *lua.LState, resp *http.Response, body string) lua.LValue {
 	luaResp.RawSetString("status_code", lua.LNumber(resp.StatusCode))
 	luaResp.RawSetString("body", lua.LString(body))
 	luaResp.RawSetString("body_size", lua.LNumber(len(body)))
-	luaResp.RawSetString("header", header(L, resp))
-	luaResp.RawSetString("raw_header", rawHeader(resp))
-	luaResp.RawSetString("cookie", cookie(L, resp))
-	luaResp.RawSetString("raw_cookie", rawCookie(resp))
+	luaResp.RawSetString("headers", headers(L, resp))
+	luaResp.RawSetString("raw_headers", rawHeaders(resp))
+	luaResp.RawSetString("cookies", cookies(L, resp))
+	luaResp.RawSetString("raw_cookies", rawCookies(resp))
 	luaResp.RawSetString("url", lua.LString(resp.Request.URL.String()))
 	luaResp.RawSetString("req_scheme", lua.LString(resp.Request.URL.Scheme))
 	luaResp.RawSetString("raw_req", rawRequest(resp))
@@ -24,7 +24,7 @@ func makeResp(L *lua.LState, resp *http.Response, body string) lua.LValue {
 	return luaResp
 }
 
-func rawHeader(resp *http.Response) lua.LValue {
+func rawHeaders(resp *http.Response) lua.LValue {
 	var rawHeader string
 	for name, v := range resp.Header {
 		for _, vaule := range v {
@@ -34,7 +34,7 @@ func rawHeader(resp *http.Response) lua.LValue {
 	return lua.LString(strings.TrimSuffix(rawHeader, "\r\n"))
 }
 
-func header(L *lua.LState, resp *http.Response) lua.LValue {
+func headers(L *lua.LState, resp *http.Response) lua.LValue {
 	table := L.NewTable()
 	for k, v := range resp.Header {
 		var each string
@@ -46,7 +46,7 @@ func header(L *lua.LState, resp *http.Response) lua.LValue {
 	return table
 }
 
-func rawCookie(resp *http.Response) lua.LValue {
+func rawCookies(resp *http.Response) lua.LValue {
 	var rawCookie string
 	for _, cookie := range resp.Cookies() {
 		rawCookie += cookie.Name + "=" + cookie.Value + ";"
@@ -54,7 +54,7 @@ func rawCookie(resp *http.Response) lua.LValue {
 	return lua.LString(strings.TrimSuffix(rawCookie, ";"))
 }
 
-func cookie(L *lua.LState, resp *http.Response) lua.LValue {
+func cookies(L *lua.LState, resp *http.Response) lua.LValue {
 	table := L.NewTable()
 	for _, cookie := range resp.Cookies() {
 		table.RawSetString(cookie.Name, lua.LString(cookie.Value))

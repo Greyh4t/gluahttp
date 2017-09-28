@@ -66,15 +66,15 @@ else
 	print("--------------")
 	print(resp.body)
 	print("--------------")
-	print(resp.header)
+	print(resp.headers)
 	print("--------------")
-	print(resp.header["Content-Type"])
+	print(resp.headers["Content-Type"])
 	print("--------------")
-	print(resp.raw_header)
+	print(resp.raw_headers)
 	print("--------------")
-	print(resp.cookie)
+	print(resp.cookies)
 	print("--------------")
-	print(resp.raw_cookie)
+	print(resp.raw_cookies)
 	print("--------------")
 	print(resp.url)
 	print("--------------")
@@ -311,10 +311,10 @@ The `http.response` table contains information about a completed HTTP request.
 | ----------- | ------ | ----------- |
 | body        | String | The HTTP response body |
 | body_size   | Number | The size of the HTTP reponse body in bytes |
-| header      | Table  | The HTTP response headers |
-| raw_header  | String | The HTTP response raw headers |
-| cookie      | Table  | The cookies sent by the server in the HTTP response |
-| raw_cookie  | String | The formated cookies sent by the server in the HTTP response |
+| headers     | Table  | The HTTP response headers |
+| raw_headers | String | The HTTP response raw headers |
+| cookies     | Table  | The cookies sent by the server in the HTTP response |
+| raw_cookies | String | The formated cookies sent by the server in the HTTP response |
 | status_code | Number | The HTTP response status code |
 | url         | String | The final URL the request ended pointing to after redirects |
 | req_scheme  | String | The scheme of request |
