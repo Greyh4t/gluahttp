@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -104,6 +105,10 @@ func doRequest(L *lua.LState, method string, uri string, options *lua.LTable) (l
 		err    error
 		client = new(http.Client)
 	)
+
+	jar, _ := cookiejar.New(nil)
+	client.Jar = jar
+
 	if options != nil {
 		transport := &http.Transport{}
 		if reqVerify, ok := options.RawGetString("verifycert").(lua.LBool); ok {
