@@ -3,7 +3,6 @@ package gluahttp
 import (
 	"bytes"
 	"crypto/tls"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -65,7 +64,7 @@ func newfileUploadRequest(method, uri string, data *lua.LTable, files *lua.LTabl
 		f   *os.File
 		err error
 	)
-	body := &bytes.Buffer{}
+	var body *bytes.Buffer
 	writer := multipart.NewWriter(body)
 
 	if files != nil {
@@ -101,16 +100,27 @@ func newfileUploadRequest(method, uri string, data *lua.LTable, files *lua.LTabl
 
 func doRequest(L *lua.LState, method string, uri string, options *lua.LTable) (lua.LValue, error) {
 	var (
-		req    *http.Request
-		err    error
-		client = new(http.Client)
+		req       *http.Request
+		client    = new(http.Client)
+		transport = new(http.Transport)
+		err       error
 	)
+
+	req, err = http.NewRequest(method, uri, nil)
+	if err != nil {
+		return lua.LNil, err
+	}
+	req.Close = true
 
 	jar, _ := cookiejar.New(nil)
 	client.Jar = jar
 
+	client.Timeout = time.Second * 30
+	transport.MaxIdleConns = 1000
+	transport.IdleConnTimeout = time.Second * 10
+	transport.TLSHandshakeTimeout = time.Second * 10
+
 	if options != nil {
-		transport := &http.Transport{}
 		if reqVerify, ok := options.RawGetString("verifycert").(lua.LBool); ok {
 			transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: !bool(reqVerify)}
 		}
@@ -121,10 +131,17 @@ func doRequest(L *lua.LState, method string, uri string, options *lua.LTable) (l
 			} else {
 				parsedProxyUrl, err := url.Parse(reqProxy.String())
 				if err != nil {
-					return nil, err
+					return lua.LNil, err
 				}
 				transport.Proxy = http.ProxyURL(parsedProxyUrl)
 			}
+		}
+
+		if reqTimeout, ok := options.RawGetString("timeout").(lua.LNumber); ok {
+			timeout := time.Second * time.Duration(float64(lua.LVAsNumber(reqTimeout)))
+			client.Timeout = timeout
+			transport.IdleConnTimeout = timeout
+			transport.TLSHandshakeTimeout = timeout
 		}
 
 		if reqRedirect, ok := options.RawGetString("redirect").(lua.LBool); ok {
@@ -133,14 +150,6 @@ func doRequest(L *lua.LState, method string, uri string, options *lua.LTable) (l
 					return http.ErrUseLastResponse
 				}
 			}
-		}
-
-		client.Transport = transport
-
-		if reqTimeout, ok := options.RawGetString("timeout").(lua.LNumber); ok {
-			client.Timeout = time.Second * time.Duration(float64(lua.LVAsNumber(reqTimeout)))
-		} else {
-			client.Timeout = time.Second * 10
 		}
 
 		if reqFiles, ok := options.RawGetString("files").(*lua.LTable); ok {
@@ -165,11 +174,6 @@ func doRequest(L *lua.LState, method string, uri string, options *lua.LTable) (l
 			if err == nil {
 				req.Header.Set("Content-Type", "application/json")
 			}
-		} else {
-			req, err = http.NewRequest(method, uri, nil)
-		}
-		if err != nil {
-			return nil, err
 		}
 
 		if reqHeaders, ok := options.RawGetString("headers").(*lua.LTable); ok {
@@ -201,16 +205,17 @@ func doRequest(L *lua.LState, method string, uri string, options *lua.LTable) (l
 			req.SetBasicAuth(reqBasicAuth.RawGetInt(1).String(), reqBasicAuth.RawGetInt(2).String())
 		}
 	}
-	req.Close = true
+	client.Transport = transport
+
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return lua.LNil, err
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
 
 	if err != nil {
-		return nil, err
+		return lua.LNil, err
 	}
 
 	return makeResp(L, resp, string(body)), nil
@@ -221,7 +226,7 @@ func doRequestAndPush(L *lua.LState, method string, uri string, options *lua.LTa
 
 	if err != nil {
 		L.Push(lua.LNil)
-		L.Push(lua.LString(fmt.Sprintf("%s", err)))
+		L.Push(lua.LString(err.Error()))
 		return 2
 	}
 
