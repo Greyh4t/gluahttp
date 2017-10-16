@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -119,6 +120,9 @@ func doRequest(L *lua.LState, method string, uri string, options *lua.LTable) (l
 	transport.MaxIdleConns = 1000
 	transport.IdleConnTimeout = time.Second * 10
 	transport.TLSHandshakeTimeout = time.Second * 10
+	transport.Dial = (&net.Dialer{
+		Timeout: time.Second * 10,
+	}).Dial
 
 	if options != nil {
 		if reqVerify, ok := options.RawGetString("verifycert").(lua.LBool); ok {
@@ -142,6 +146,9 @@ func doRequest(L *lua.LState, method string, uri string, options *lua.LTable) (l
 			client.Timeout = timeout
 			transport.IdleConnTimeout = timeout
 			transport.TLSHandshakeTimeout = timeout
+			transport.Dial = (&net.Dialer{
+				Timeout: timeout,
+			}).Dial
 		}
 
 		if reqRedirect, ok := options.RawGetString("redirect").(lua.LBool); ok {
