@@ -107,6 +107,17 @@ func doRequest(L *lua.LState, method string, uri string, options *lua.LTable) (l
 		err       error
 	)
 
+	if options != nil {
+		if rawUrl, _ := options.RawGetString("rawquery").(lua.LBool); !rawUrl {
+			parsedUrl, err := url.Parse(uri)
+			if err != nil {
+				return lua.LNil, err
+			}
+			parsedUrl.RawQuery = strings.Replace(parsedUrl.Query().Encode(), "+", "%20", -1)
+			uri = parsedUrl.String()
+		}
+	}
+
 	req, err = http.NewRequest(method, uri, nil)
 	if err != nil {
 		return lua.LNil, err
@@ -202,7 +213,12 @@ func doRequest(L *lua.LState, method string, uri string, options *lua.LTable) (l
 				}
 				parsedQuery.Set(key.String(), value.String())
 			})
-			req.URL.RawQuery = parsedQuery.Encode()
+			if rawUrl, _ := options.RawGetString("rawquery").(lua.LBool); !rawUrl {
+				req.URL.RawQuery = strings.Replace(parsedQuery.Encode(), "+", "%20", -1)
+			} else {
+				rawQuery, _ := url.QueryUnescape(parsedQuery.Encode())
+				req.URL.RawQuery = rawQuery
+			}
 		}
 		if reqHost, ok := options.RawGetString("host").(lua.LString); ok {
 			req.Host = reqHost.String()

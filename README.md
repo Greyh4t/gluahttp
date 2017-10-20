@@ -31,6 +31,7 @@ resp, err = http.post("http://www.example.com?x=1", {
 		page="测试",
 		x="2"
 	},
+	--rawquery=true,
 	data={
 		a=1,
 		b="2"
@@ -123,6 +124,7 @@ end
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
 | basicauth  | Table   | Set BasicAuth |
+| rawquery   | Bool    | Whether do the urlEncode for query parameters |
 
 **Returns**
 
@@ -150,6 +152,7 @@ end
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
 | basicauth  | Table   | Set BasicAuth |
+| rawquery   | Bool    | Whether do the urlEncode for query parameters |
 
 **Returns**
 
@@ -176,6 +179,7 @@ end
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
 | basicauth  | Table   | Set BasicAuth |
+| rawquery   | Bool    | Whether do the urlEncode for query parameters |
 
 **Returns**
 
@@ -207,6 +211,7 @@ end
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
 | basicauth  | Table   | Set BasicAuth |
+| rawquery   | Bool    | Whether do the urlEncode for query parameters |
 
 
 **Returns**
@@ -239,6 +244,7 @@ end
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
 | basicauth  | Table   | Set BasicAuth |
+| rawquery   | Bool    | Whether do the urlEncode for query parameters |
 
 **Returns**
 
@@ -270,6 +276,7 @@ end
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
 | basicauth  | Table   | Set BasicAuth |
+| rawquery   | Bool    | Whether do the urlEncode for query parameters |
 
 **Returns**
 
@@ -296,6 +303,7 @@ end
 | verifycert | Bool    | Whether verify server cert |
 | host       | String  | Set a host different with url |
 | basicauth  | Table   | Set BasicAuth |
+| rawquery   | Bool    | Whether do the urlEncode for query parameters |
 
 **Returns**
 
