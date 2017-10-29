@@ -15,14 +15,19 @@ go get github.com/cjoudrey/gluahttp
 ```go
 package main
 
-import "github.com/yuin/gopher-lua"
-import "github.com/Greyh4t/gluahttp"
+import (
+	"github.com/Greyh4t/gluahttp"
+	"github.com/viki-org/dnscache"
+	"github.com/yuin/gopher-lua"
+)
 
 func main() {
 	L := lua.NewState()
 	defer L.Close()
 
-	L.PreloadModule("http", gluahttp.Loader)
+	resolver := dnscache.New(time.Minute * 10)
+	L.PreloadModule("http", gluahttp.NewHttpModule(resolver).Loader)
+	// L.PreloadModule("http", gluahttp.NewHttpModule(nil).Loader)
 
 	if err := L.DoString(`
 local http = require("http")
