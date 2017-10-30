@@ -117,7 +117,6 @@ func (self *httpModule) doRequest(L *lua.LState, method, u string, options *lua.
 		transport = new(http.Transport)
 		err       error
 	)
-
 	client.Jar, _ = cookiejar.New(nil)
 	transport.MaxIdleConns = 1000
 
@@ -199,6 +198,8 @@ func (self *httpModule) doRequest(L *lua.LState, method, u string, options *lua.
 			if err == nil {
 				req.Header.Set("Content-Type", "application/json")
 			}
+		} else {
+			req, err = http.NewRequest(method, u, nil)
 		}
 		if err != nil {
 			return lua.LNil, err
