@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/viki-org/dnscache"
+	"github.com/Greyh4t/dnscache"
 	"github.com/yuin/gopher-lua"
 )
 
