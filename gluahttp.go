@@ -70,7 +70,7 @@ func (self *httpModule) options(L *lua.LState) int {
 }
 
 func (self *httpModule) newfileUploadRequest(method, u string, data *lua.LTable, files *lua.LTable) (*http.Request, error) {
-	var body *bytes.Buffer
+	var body = new(bytes.Buffer)
 	writer := multipart.NewWriter(body)
 
 	var fileList [][]string
