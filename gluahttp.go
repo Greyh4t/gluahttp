@@ -117,8 +117,6 @@ func (self *httpModule) doRequest(L *lua.LState, method, u string, options *lua.
 		transport = new(http.Transport)
 		err       error
 	)
-	client.Jar, _ = cookiejar.New(nil)
-	transport.MaxIdleConns = 1000
 
 	if options != nil {
 		if rawUrl, _ := options.RawGetString("rawquery").(lua.LBool); !rawUrl {
@@ -130,16 +128,16 @@ func (self *httpModule) doRequest(L *lua.LState, method, u string, options *lua.
 			u = parsedUrl.String()
 		}
 
-		if reqProxy, ok := options.RawGetString("proxy").(lua.LString); ok {
-			if reqProxy.String() == "" {
-				transport.Proxy = nil
-			} else {
-				parsedProxyUrl, err := url.Parse(reqProxy.String())
-				if err != nil {
-					return lua.LNil, err
-				}
-				transport.Proxy = http.ProxyURL(parsedProxyUrl)
+		if reqProxy, ok := options.RawGetString("proxy").(lua.LString); ok && reqProxy.String() != "" {
+			parsedProxyUrl, err := url.Parse(reqProxy.String())
+			if err != nil {
+				return lua.LNil, err
 			}
+			transport.Proxy = http.ProxyURL(parsedProxyUrl)
+		}
+
+		if reqVerify, ok := options.RawGetString("verifycert").(lua.LBool); ok {
+			transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: !bool(reqVerify)}
 		}
 
 		if reqRedirect, ok := options.RawGetString("redirect").(lua.LBool); ok {
@@ -150,29 +148,9 @@ func (self *httpModule) doRequest(L *lua.LState, method, u string, options *lua.
 			}
 		}
 
-		if reqVerify, ok := options.RawGetString("verifycert").(lua.LBool); ok {
-			transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: !bool(reqVerify)}
-		}
-
 		if reqTimeout, ok := options.RawGetString("timeout").(lua.LNumber); ok {
 			timeout := time.Second * time.Duration(float64(lua.LVAsNumber(reqTimeout)))
 			client.Timeout = timeout
-			transport.IdleConnTimeout = timeout
-			transport.TLSHandshakeTimeout = timeout
-			if self.resolver != nil {
-				transport.Dial = func(network string, address string) (net.Conn, error) {
-					host, port, _ := net.SplitHostPort(address)
-					ip, err := self.resolver.FetchOneString(host)
-					if err != nil {
-						return nil, err
-					}
-					return net.DialTimeout("tcp", net.JoinHostPort(ip, port), timeout)
-				}
-			} else {
-				transport.Dial = (&net.Dialer{
-					Timeout: timeout,
-				}).Dial
-			}
 		}
 
 		//make request
@@ -246,26 +224,34 @@ func (self *httpModule) doRequest(L *lua.LState, method, u string, options *lua.
 		if err != nil {
 			return lua.LNil, err
 		}
-		req.Close = true
-
 		client.Timeout = time.Second * 30
-		transport.IdleConnTimeout = time.Second * 10
-		transport.TLSHandshakeTimeout = time.Second * 10
+	}
 
-		if self.resolver != nil {
-			transport.Dial = func(network string, address string) (net.Conn, error) {
-				host, port, _ := net.SplitHostPort(address)
-				ip, err := self.resolver.FetchOneString(host)
-				if err != nil {
-					return nil, err
-				}
-				return net.DialTimeout("tcp", net.JoinHostPort(ip, port), time.Second*10)
+	req.Close = true
+	client.Jar, _ = cookiejar.New(nil)
+	transport.MaxIdleConns = 100
+	transport.IdleConnTimeout = 90 * time.Second
+	transport.TLSHandshakeTimeout = 10 * time.Second
+	transport.ExpectContinueTimeout = 1 * time.Second
+	if self.resolver != nil {
+		transport.Dial = func(network, address string) (net.Conn, error) {
+			host, port, _ := net.SplitHostPort(address)
+			ip, err := self.resolver.FetchOneString(host)
+			if err != nil {
+				return nil, err
 			}
-		} else {
-			transport.Dial = (&net.Dialer{
-				Timeout: time.Second * 10,
-			}).Dial
+			return (&net.Dialer{
+				Timeout:   10 * time.Second,
+				KeepAlive: 30 * time.Second,
+				DualStack: true,
+			}).Dial(network, net.JoinHostPort(ip, port))
 		}
+	} else {
+		transport.Dial = (&net.Dialer{
+			Timeout:   10 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).Dial
 	}
 
 	client.Transport = transport
