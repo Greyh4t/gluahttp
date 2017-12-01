@@ -115,13 +115,13 @@ func (self *httpModule) doRequest(L *lua.LState, method, u string, options *lua.
 		req       *http.Request
 		client    = new(http.Client)
 		transport = new(http.Transport)
-		timeout   = time.Second * 30
+		timeout   = 30 * time.Second
 		err       error
 	)
 
 	if options != nil {
 		if reqTimeout, ok := options.RawGetString("timeout").(lua.LNumber); ok {
-			timeout = time.Second * time.Duration(float64(lua.LVAsNumber(reqTimeout)))
+			timeout = time.Duration(float64(lua.LVAsNumber(reqTimeout))) * time.Second
 		}
 
 		if rawUrl, _ := options.RawGetString("rawquery").(lua.LBool); !rawUrl {
@@ -228,9 +228,9 @@ func (self *httpModule) doRequest(L *lua.LState, method, u string, options *lua.
 
 	client.Jar, _ = cookiejar.New(nil)
 	client.Timeout = timeout
-	transport.TLSHandshakeTimeout = 10 * time.Second
 	transport.MaxIdleConns = 100
 	transport.IdleConnTimeout = 90 * time.Second
+	transport.TLSHandshakeTimeout = 10 * time.Second
 	transport.ExpectContinueTimeout = 1 * time.Second
 
 	if self.resolver != nil {
