@@ -115,10 +115,15 @@ func (self *httpModule) doRequest(L *lua.LState, method, u string, options *lua.
 		req       *http.Request
 		client    = new(http.Client)
 		transport = new(http.Transport)
+		timeout   = time.Second * 30
 		err       error
 	)
 
 	if options != nil {
+		if reqTimeout, ok := options.RawGetString("timeout").(lua.LNumber); ok {
+			timeout = time.Second * time.Duration(float64(lua.LVAsNumber(reqTimeout)))
+		}
+
 		if rawUrl, _ := options.RawGetString("rawquery").(lua.LBool); !rawUrl {
 			parsedUrl, err := url.Parse(u)
 			if err != nil {
@@ -146,11 +151,6 @@ func (self *httpModule) doRequest(L *lua.LState, method, u string, options *lua.
 					return http.ErrUseLastResponse
 				}
 			}
-		}
-
-		if reqTimeout, ok := options.RawGetString("timeout").(lua.LNumber); ok {
-			timeout := time.Second * time.Duration(float64(lua.LVAsNumber(reqTimeout)))
-			client.Timeout = timeout
 		}
 
 		//make request
@@ -224,15 +224,15 @@ func (self *httpModule) doRequest(L *lua.LState, method, u string, options *lua.
 		if err != nil {
 			return lua.LNil, err
 		}
-		client.Timeout = time.Second * 30
 	}
 
-	req.Close = true
 	client.Jar, _ = cookiejar.New(nil)
+	client.Timeout = timeout
+	transport.TLSHandshakeTimeout = 10 * time.Second
 	transport.MaxIdleConns = 100
 	transport.IdleConnTimeout = 90 * time.Second
-	transport.TLSHandshakeTimeout = 10 * time.Second
 	transport.ExpectContinueTimeout = 1 * time.Second
+
 	if self.resolver != nil {
 		transport.Dial = func(network, address string) (net.Conn, error) {
 			host, port, _ := net.SplitHostPort(address)
@@ -240,18 +240,20 @@ func (self *httpModule) doRequest(L *lua.LState, method, u string, options *lua.
 			if err != nil {
 				return nil, err
 			}
-			return (&net.Dialer{
-				Timeout:   10 * time.Second,
-				KeepAlive: 30 * time.Second,
-				DualStack: true,
-			}).Dial(network, net.JoinHostPort(ip, port))
+			conn, err := net.DialTimeout(network, net.JoinHostPort(ip, port), timeout)
+			if err != nil {
+				return nil, err
+			}
+			return NewTimeoutConn(conn, timeout), nil
 		}
 	} else {
-		transport.Dial = (&net.Dialer{
-			Timeout:   10 * time.Second,
-			KeepAlive: 30 * time.Second,
-			DualStack: true,
-		}).Dial
+		transport.Dial = func(network, address string) (net.Conn, error) {
+			conn, err := net.DialTimeout(network, address, timeout)
+			if err != nil {
+				return nil, err
+			}
+			return NewTimeoutConn(conn, timeout), nil
+		}
 	}
 
 	client.Transport = transport
