@@ -258,6 +258,8 @@ func (self *httpModule) doRequest(L *lua.LState, method, u string, options *lua.
 
 	client.Transport = transport
 
+	req.Header.Add("X-SCANNER", "ZERO")
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return lua.LNil, err
