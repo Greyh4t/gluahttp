@@ -94,7 +94,7 @@ type RequestOptions struct {
 	// will wait.
 	Timeout time.Duration
 
-	Redirect bool
+	DisableRedirect bool
 
 	// RequestBody allows you to put anything matching an `io.Reader` into the request
 	// this option will take precedence over any other request option specified
@@ -197,9 +197,7 @@ func parseOptions(options *lua.LTable) (*RequestOptions, error) {
 	}
 
 	if reqRedirect, ok := options.RawGetString("redirect").(lua.LBool); ok {
-		requestOptions.Redirect = bool(reqRedirect)
-	} else {
-		requestOptions.Redirect = true
+		requestOptions.DisableRedirect = !bool(reqRedirect)
 	}
 
 	if reqHost, ok := options.RawGetString("host").(lua.LString); ok {
@@ -307,7 +305,7 @@ func (self *httpModule) BuildClient(ro RequestOptions) *http.Client {
 		Timeout:   ro.Timeout,
 	}
 
-	if !ro.Redirect {
+	if ro.DisableRedirect {
 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		}
