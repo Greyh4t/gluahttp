@@ -88,7 +88,7 @@ func getHeaders(L *lua.LState, headers http.Header) *lua.LTable {
 		for _, header := range v {
 			each += header + ","
 		}
-		table.RawSetString(k, lua.LString(strings.TrimSuffix(each, ", ")))
+		table.RawSetString(k, lua.LString(strings.TrimSuffix(each, ",")))
 	}
 	return table
 }
