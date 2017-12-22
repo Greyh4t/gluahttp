@@ -9,7 +9,7 @@ type httpModule struct {
 	resolver *dnscache.Resolver
 }
 
-func NewHttpModule(resolver *dnscache.Resolver) *httpModule {
+func New(resolver *dnscache.Resolver) *httpModule {
 	return &httpModule{
 		resolver: resolver,
 	}

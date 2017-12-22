@@ -181,9 +181,9 @@ func main() {
 	L.SetField(loaded, "json", j)
 
 	// resolver为dns缓存
-	// 如果不需要使用dns缓存，NewHttpModule(nil)即可
+	// 如果不需要使用dns缓存，New(nil)即可
 	resolver := dnscache.New(time.Minute * 10)
-	L.PreloadModule("http", gluahttp.NewHttpModule(resolver).Loader)
+	L.PreloadModule("http", gluahttp.New(resolver).Loader)
 
 	if err := L.DoString(`
 local json = require("json")

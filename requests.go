@@ -27,7 +27,7 @@ import (
 
 var quoteEscaper = strings.NewReplacer(`\`, `\\`, `"`, `\"`)
 
-type FileUpload struct {
+type fileUpload struct {
 	// Filename is the name of the file that you wish to upload. We use this to guess the mimetype as well as pass it onto the server
 	FileName string
 
@@ -42,7 +42,7 @@ type FileUpload struct {
 	FileMime string
 }
 
-type RequestOptions struct {
+type requestOptions struct {
 
 	// Data is a map of key values that will eventually convert into the
 	// query string of a GET request or the body of a POST request.
@@ -53,7 +53,7 @@ type RequestOptions struct {
 
 	// Files is where you can include files to upload. The use of this data
 	// structure is limited to POST requests
-	Files []FileUpload
+	Files []fileUpload
 
 	// JSON can be used when you wish to send JSON within the request body
 	JSON string
@@ -105,13 +105,13 @@ type RequestOptions struct {
 	IsAjax   bool
 }
 
-func (ro *RequestOptions) CloseFiles() {
+func (ro *requestOptions) CloseFiles() {
 	for _, f := range ro.Files {
 		f.FileContents.Close()
 	}
 }
 
-func (ro RequestOptions) proxySettings(req *http.Request) (*url.URL, error) {
+func (ro requestOptions) proxySettings(req *http.Request) (*url.URL, error) {
 	// No proxies – lets use the default
 	if len(ro.Proxies) == 0 {
 		return http.ProxyFromEnvironment(req)
@@ -126,38 +126,38 @@ func (ro RequestOptions) proxySettings(req *http.Request) (*url.URL, error) {
 	return http.ProxyFromEnvironment(req)
 }
 
-func FileUploadFromDisk(fieldName, filePath string) (FileUpload, error) {
-	var fileUpload FileUpload
+func fileUploadFromDisk(fieldName, filePath string) (fileUpload, error) {
+	var fu fileUpload
 
 	fd, err := os.Open(filePath)
 
 	if err != nil {
-		return fileUpload, err
+		return fu, err
 	}
 	_, fileName := path.Split(strings.Replace(filePath, `\`, `/`, -1))
-	return FileUpload{
+	return fileUpload{
 		FieldName:    fieldName,
 		FileName:     fileName,
 		FileContents: fd,
 	}, nil
 }
 
-func parseOptions(options *lua.LTable) (*RequestOptions, error) {
-	var requestOptions = new(RequestOptions)
+func parseOptions(options *lua.LTable) (*requestOptions, error) {
+	var ro = new(requestOptions)
 	if options == nil {
-		requestOptions.Timeout = 30 * time.Second
-		return requestOptions, nil
+		ro.Timeout = 30 * time.Second
+		return ro, nil
 	}
 
 	if reqFiles, ok := options.RawGetString("files").(*lua.LTable); ok {
 		var err error
 		reqFiles.ForEach(func(fieldName, filePath lua.LValue) {
-			fileUpload, ferr := FileUploadFromDisk(fieldName.String(), filePath.String())
+			fu, ferr := fileUploadFromDisk(fieldName.String(), filePath.String())
 			if ferr != nil {
 				err = ferr
 				return
 			}
-			requestOptions.Files = append(requestOptions.Files, fileUpload)
+			ro.Files = append(ro.Files, fu)
 		})
 		if err != nil {
 			return nil, err
@@ -166,14 +166,14 @@ func parseOptions(options *lua.LTable) (*RequestOptions, error) {
 
 	if reqProxies, ok := options.RawGetString("proxies").(*lua.LTable); ok {
 		var err error
-		requestOptions.Proxies = map[string]*url.URL{}
+		ro.Proxies = map[string]*url.URL{}
 		reqProxies.ForEach(func(scheme, proxy lua.LValue) {
 			proxyUrl, perr := url.Parse(proxy.String())
 			if perr != nil {
 				err = perr
 				return
 			}
-			requestOptions.Proxies[scheme.String()] = proxyUrl
+			ro.Proxies[scheme.String()] = proxyUrl
 		})
 		if err != nil {
 			return nil, err
@@ -181,83 +181,83 @@ func parseOptions(options *lua.LTable) (*RequestOptions, error) {
 	}
 
 	if reqTimeout, ok := options.RawGetString("timeout").(lua.LNumber); ok {
-		requestOptions.Timeout = time.Duration(float64(lua.LVAsNumber(reqTimeout))) * time.Second
+		ro.Timeout = time.Duration(float64(lua.LVAsNumber(reqTimeout))) * time.Second
 	}
 
 	if reqVerify, ok := options.RawGetString("verify").(lua.LBool); ok {
-		requestOptions.InsecureSkipVerify = !bool(reqVerify)
+		ro.InsecureSkipVerify = !bool(reqVerify)
 	}
 
 	if reqCompress, ok := options.RawGetString("compress").(lua.LBool); ok {
-		requestOptions.DisableCompression = !bool(reqCompress)
+		ro.DisableCompression = !bool(reqCompress)
 	}
 
 	if reqAjax, ok := options.RawGetString("ajax").(lua.LBool); ok {
-		requestOptions.IsAjax = bool(reqAjax)
+		ro.IsAjax = bool(reqAjax)
 	}
 
 	if reqRedirect, ok := options.RawGetString("redirect").(lua.LBool); ok {
-		requestOptions.DisableRedirect = !bool(reqRedirect)
+		ro.DisableRedirect = !bool(reqRedirect)
 	}
 
 	if reqHost, ok := options.RawGetString("host").(lua.LString); ok {
-		requestOptions.Host = reqHost.String()
+		ro.Host = reqHost.String()
 	}
 
 	if reqAuth, ok := options.RawGetString("auth").(*lua.LTable); ok {
-		requestOptions.Auth = []string{
+		ro.Auth = []string{
 			reqAuth.RawGetInt(1).String(),
 			reqAuth.RawGetInt(2).String(),
 		}
 	}
 
 	if reqHeaders, ok := options.RawGetString("headers").(*lua.LTable); ok {
-		requestOptions.Headers = map[string]string{}
+		ro.Headers = map[string]string{}
 		reqHeaders.ForEach(func(key, value lua.LValue) {
-			requestOptions.Headers[key.String()] = value.String()
+			ro.Headers[key.String()] = value.String()
 		})
 	}
 
 	if reqCookies, ok := options.RawGetString("cookies").(*lua.LTable); ok {
 		reqCookies.ForEach(func(key, value lua.LValue) {
-			requestOptions.Cookies = append(requestOptions.Cookies, &http.Cookie{Name: key.String(), Value: value.String()})
+			ro.Cookies = append(ro.Cookies, &http.Cookie{Name: key.String(), Value: value.String()})
 		})
 	}
 
 	if reqParams, ok := options.RawGetString("params").(*lua.LTable); ok {
-		requestOptions.Params = map[string]string{}
+		ro.Params = map[string]string{}
 		reqParams.ForEach(func(key, value lua.LValue) {
-			requestOptions.Params[key.String()] = value.String()
+			ro.Params[key.String()] = value.String()
 		})
 	}
 
 	if reqData, ok := options.RawGetString("data").(*lua.LTable); ok {
-		requestOptions.Data = map[string]string{}
+		ro.Data = map[string]string{}
 		reqData.ForEach(func(key, value lua.LValue) {
-			requestOptions.Data[key.String()] = value.String()
+			ro.Data[key.String()] = value.String()
 		})
 	}
 
 	if reqJson, ok := options.RawGetString("json").(lua.LString); ok {
-		requestOptions.JSON = reqJson.String()
+		ro.JSON = reqJson.String()
 	}
 
 	if reqXml, ok := options.RawGetString("xml").(lua.LString); ok {
-		requestOptions.XML = reqXml.String()
+		ro.XML = reqXml.String()
 	}
 
 	if reqRawData, ok := options.RawGetString("raw_data").(lua.LString); ok {
-		requestOptions.RawData = reqRawData.String()
+		ro.RawData = reqRawData.String()
 	}
 
 	if reqQuery, ok := options.RawGetString("raw_query").(lua.LString); ok {
-		requestOptions.RawQuery = reqQuery.String()
+		ro.RawQuery = reqQuery.String()
 	}
 
-	return requestOptions, nil
+	return ro, nil
 }
 
-func (self *httpModule) createTransport(ro RequestOptions) *http.Transport {
+func (self *httpModule) createTransport(ro requestOptions) *http.Transport {
 	transport := &http.Transport{
 		MaxIdleConns:          100,
 		IdleConnTimeout:       90 * time.Second,
@@ -279,7 +279,7 @@ func (self *httpModule) createTransport(ro RequestOptions) *http.Transport {
 			if err != nil {
 				return nil, err
 			}
-			return NewTimeoutConn(conn, ro.Timeout), nil
+			return newTimeoutConn(conn, ro.Timeout), nil
 		}
 	} else {
 		transport.Dial = func(network, address string) (net.Conn, error) {
@@ -287,15 +287,15 @@ func (self *httpModule) createTransport(ro RequestOptions) *http.Transport {
 			if err != nil {
 				return nil, err
 			}
-			return NewTimeoutConn(conn, ro.Timeout), nil
+			return newTimeoutConn(conn, ro.Timeout), nil
 		}
 	}
 
-	EnsureTransporterFinalized(transport)
+	ensureTransporterFinalized(transport)
 	return transport
 }
 
-func (self *httpModule) BuildClient(ro RequestOptions) *http.Client {
+func (self *httpModule) buildClient(ro requestOptions) *http.Client {
 	// The function does not return an error ever... so we are just ignoring it
 	cookieJar, _ := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 
@@ -314,7 +314,7 @@ func (self *httpModule) BuildClient(ro RequestOptions) *http.Client {
 	return client
 }
 
-func BuildRequest(method, urlStr string, ro *RequestOptions) (*http.Request, error) {
+func buildRequest(method, urlStr string, ro *requestOptions) (*http.Request, error) {
 	if ro.RawData != "" {
 		return http.NewRequest(method, urlStr, strings.NewReader(ro.RawData))
 	}
@@ -338,7 +338,7 @@ func BuildRequest(method, urlStr string, ro *RequestOptions) (*http.Request, err
 	return http.NewRequest(method, urlStr, nil)
 }
 
-func createBasicJSONRequest(method, urlStr string, ro *RequestOptions) (*http.Request, error) {
+func createBasicJSONRequest(method, urlStr string, ro *requestOptions) (*http.Request, error) {
 	req, err := http.NewRequest(method, urlStr, strings.NewReader(ro.JSON))
 	if err != nil {
 		return nil, err
@@ -349,7 +349,7 @@ func createBasicJSONRequest(method, urlStr string, ro *RequestOptions) (*http.Re
 	return req, nil
 }
 
-func createBasicXMLRequest(method, urlStr string, ro *RequestOptions) (*http.Request, error) {
+func createBasicXMLRequest(method, urlStr string, ro *requestOptions) (*http.Request, error) {
 	req, err := http.NewRequest(method, urlStr, strings.NewReader(ro.XML))
 	if err != nil {
 		return nil, err
@@ -360,7 +360,7 @@ func createBasicXMLRequest(method, urlStr string, ro *RequestOptions) (*http.Req
 	return req, nil
 }
 
-func createFileUploadRequest(method, urlStr string, ro *RequestOptions) (*http.Request, error) {
+func createFileUploadRequest(method, urlStr string, ro *requestOptions) (*http.Request, error) {
 	if method == "POST" {
 		return createMultiPartPostRequest(method, urlStr, ro)
 	}
@@ -382,7 +382,7 @@ func createFileUploadRequest(method, urlStr string, ro *RequestOptions) (*http.R
 	return req, nil
 }
 
-func createMultiPartPostRequest(method, urlStr string, ro *RequestOptions) (*http.Request, error) {
+func createMultiPartPostRequest(method, urlStr string, ro *requestOptions) (*http.Request, error) {
 	body := &bytes.Buffer{}
 
 	multipartWriter := multipart.NewWriter(body)
@@ -443,7 +443,7 @@ func createMultiPartPostRequest(method, urlStr string, ro *RequestOptions) (*htt
 	return req, err
 }
 
-func createBasicRequest(method, urlStr string, ro *RequestOptions) (*http.Request, error) {
+func createBasicRequest(method, urlStr string, ro *requestOptions) (*http.Request, error) {
 	req, err := http.NewRequest(method, urlStr, strings.NewReader(encodePostValues(ro.Data)))
 
 	if err != nil {
@@ -468,7 +468,7 @@ func (self *httpModule) doRequest(L *lua.LState, method, urlStr string, options 
 		return lua.LNil, err
 	}
 
-	req, err := BuildRequest(method, urlStr, ro)
+	req, err := buildRequest(method, urlStr, ro)
 	if err != nil {
 		return lua.LNil, err
 	}
@@ -476,7 +476,7 @@ func (self *httpModule) doRequest(L *lua.LState, method, urlStr string, options 
 	addHeaders(req, ro)
 	addCookies(req, ro)
 
-	client := self.BuildClient(*ro)
+	client := self.buildClient(*ro)
 	resp, err := client.Do(req)
 	if err != nil {
 		return lua.LNil, err
@@ -487,7 +487,7 @@ func (self *httpModule) doRequest(L *lua.LState, method, urlStr string, options 
 // buildURLParams returns a URL with all of the params
 // Note: This function will override current URL params if they contradict what is provided in the map
 // That is what the "magic" is on the last line
-func buildURL(urlStr string, ro *RequestOptions) (string, error) {
+func buildURL(urlStr string, ro *requestOptions) (string, error) {
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
 		return "", err
@@ -511,7 +511,7 @@ func buildURL(urlStr string, ro *RequestOptions) (string, error) {
 // addHTTPHeaders adds any additional HTTP headers that need to be added are added here including:
 // 1. Authorization Headers
 // 2. Any other header requested
-func addHeaders(req *http.Request, ro *RequestOptions) {
+func addHeaders(req *http.Request, ro *requestOptions) {
 	req.Header.Set("X-SCANNER", "ZERO")
 
 	for key, value := range ro.Headers {
@@ -531,7 +531,7 @@ func addHeaders(req *http.Request, ro *RequestOptions) {
 	}
 }
 
-func addCookies(req *http.Request, ro *RequestOptions) {
+func addCookies(req *http.Request, ro *requestOptions) {
 	for _, c := range ro.Cookies {
 		req.AddCookie(c)
 	}
@@ -551,10 +551,10 @@ func encodePostValues(postValues map[string]string) string {
 	return urlValues.Encode() // This will sort all of the string values
 }
 
-// EnsureTransporterFinalized will ensure that when the HTTP client is GCed
+// ensureTransporterFinalized will ensure that when the HTTP client is GCed
 // the runtime will close the idle connections (so that they won't leak)
 // this function was adopted from Hashicorp's go-cleanhttp package
-func EnsureTransporterFinalized(httpTransport *http.Transport) {
+func ensureTransporterFinalized(httpTransport *http.Transport) {
 	runtime.SetFinalizer(&httpTransport, func(transportInt **http.Transport) {
 		(*transportInt).CloseIdleConnections()
 	})

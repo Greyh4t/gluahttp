@@ -5,16 +5,16 @@ import (
 	"time"
 )
 
-func NewTimeoutConn(netConn net.Conn, timeout time.Duration) net.Conn {
-	return &TimeoutConn{netConn, timeout}
+func newTimeoutConn(netConn net.Conn, timeout time.Duration) net.Conn {
+	return &timeoutConn{netConn, timeout}
 }
 
-type TimeoutConn struct {
+type timeoutConn struct {
 	net.Conn
 	timeout time.Duration
 }
 
-func (c *TimeoutConn) Read(b []byte) (int, error) {
+func (c *timeoutConn) Read(b []byte) (int, error) {
 	if c.timeout > 0 {
 		err := c.Conn.SetReadDeadline(time.Now().Add(c.timeout))
 		if err != nil {
@@ -24,7 +24,7 @@ func (c *TimeoutConn) Read(b []byte) (int, error) {
 	return c.Conn.Read(b)
 }
 
-func (c *TimeoutConn) Write(b []byte) (int, error) {
+func (c *timeoutConn) Write(b []byte) (int, error) {
 	if c.timeout > 0 {
 		err := c.Conn.SetWriteDeadline(time.Now().Add(c.timeout))
 		if err != nil {
