@@ -15,7 +15,6 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -291,7 +290,6 @@ func (self *httpModule) createTransport(ro requestOptions) *http.Transport {
 		}
 	}
 
-	ensureTransporterFinalized(transport)
 	return transport
 }
 
@@ -549,13 +547,4 @@ func encodePostValues(postValues map[string]string) string {
 	}
 
 	return urlValues.Encode() // This will sort all of the string values
-}
-
-// ensureTransporterFinalized will ensure that when the HTTP client is GCed
-// the runtime will close the idle connections (so that they won't leak)
-// this function was adopted from Hashicorp's go-cleanhttp package
-func ensureTransporterFinalized(httpTransport *http.Transport) {
-	runtime.SetFinalizer(&httpTransport, func(transportInt **http.Transport) {
-		(*transportInt).CloseIdleConnections()
-	})
 }
