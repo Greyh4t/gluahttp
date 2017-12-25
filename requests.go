@@ -259,12 +259,13 @@ func parseOptions(options *lua.LTable) (*requestOptions, error) {
 func (self *httpModule) createTransport(ro requestOptions) *http.Transport {
 	transport := &http.Transport{
 		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
+		IdleConnTimeout:       5 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 		Proxy:              ro.proxySettings,
 		TLSClientConfig:    &tls.Config{InsecureSkipVerify: ro.InsecureSkipVerify},
 		DisableCompression: ro.DisableCompression,
+		DisableKeepAlives:  true,
 	}
 
 	if self.resolver != nil {
